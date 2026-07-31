@@ -1,0 +1,28 @@
+# Python / build artifacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+build/
+build_cmake/
+build_wheel/
+dist/
+wheelhouse/
+.eggs/
+pip-wheel-metadata/
+
+# CMake (in-tree builds)
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+*.so
+*.so.*
+*.dylib
+*.dll
+*.a
+compile_commands.json
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store

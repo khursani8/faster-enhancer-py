@@ -1,0 +1,42 @@
+faster-enhancer.c
+====
+
+faster-enhancer.c is a native C/SIMD inference engine derived from the FastEnhancer-Medium
+model architecture and pretrained ONNX release.
+
+FastEnhancer
+------------
+
+Original project:
+  FastEnhancer: Speed-Optimized Streaming Neural Speech Enhancement
+  https://github.com/aask1357/fastenhancer
+
+Original author and license:
+  Copyright (c) 2025 AHN Sung Hwan
+  Licensed under the MIT License.
+
+The bundled `weights/fe.q8` blob is a quantized derivative of the
+FastEnhancer-Medium pretrained model. The original copyright notice and MIT
+license terms are preserved here for the model-derived components.
+
+Third-party techniques
+----------------------
+
+No third-party source code is included in this repository. The following
+projects informed the design of the int8 GEMM micro-kernels; the algorithmic
+patterns were reimplemented, not copied. Their licenses are listed for
+attribution only.
+
+  ggml / llama.cpp   MIT          NEON i16-level vmull/vmlal/vpadalq fusion
+  XNNPACK            BSD-3-Clause AVX2 vpmovsxbw + vpmaddwd saturation-free dot
+  oneDNN             Apache-2.0   x86 int8 GEMM blocking conventions
+  ARM KleidiAI       Apache-2.0   I8MM A row-pair pre-pack layout
+
+See the Sources table in docs/optimizations.md for the specific references.
+
+Test audio
+----------
+
+testaudio/fetch.sh downloads the RNNoise demo clips from jmvalin.ca. Those
+files are not redistributed here and are not covered by this project's
+license.

@@ -1,0 +1,65 @@
+[build-system]
+requires = ["scikit-build-core>=0.10", "packaging>=24"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "faster-enhancer-py"
+version = "0.1.0"
+description = "Python binding to faster-enhancer.c — streaming 48 kHz int8 speech enhancement"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { file = "csrc/LICENSE" }
+authors = [{ name = "faster-enhancer-py contributors" }]
+keywords = ["speech-enhancement", "denoising", "audio", "int8", "streaming"]
+classifiers = [
+    "Topic :: Multimedia :: Sound/Audio :: Speech",
+    "Topic :: Scientific/Engineering",
+    "Programming Language :: C",
+    "Programming Language :: Python :: 3",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "License :: OSI Approved :: MIT License",
+]
+dependencies = ["numpy>=1.22"]
+
+[project.urls]
+Homepage = "https://github.com/khursanirevo/faster-enhancer-py"
+Source = "https://github.com/khursanirevo/faster-enhancer-py"
+Upstream = "https://github.com/kdrkdrkdr/faster-enhancer.c"
+
+[tool.scikit-build]
+cmake.version = ">=3.20"
+build-dir = "build_wheel"
+# The C engine ships no scalar tier and refuses unsupported CPUs at fe_init;
+# a release build with assertions off is the intended configuration.
+cmake.args = ["-DCMAKE_BUILD_TYPE=Release"]
+# Copy the Python package from source; CMake additionally installs the compiled
+# libfe shared library and the vendored fe.q8 weights into faster_enhancer/.
+wheel.packages = ["faster_enhancer"]
+# Keep the vendored C sources + CMakeLists in the sdist so source builds work.
+sdist.include = ["csrc/", "CMakeLists.txt", "faster_enhancer/"]
+
+# --------------------------------------------------------------------------- #
+# cibuildwheel: publish prebuilt wheels so users never need a C compiler.
+# Linux (x86_64 + aarch64 via QEMU) and macOS (x86_64 + arm64) are built on CI.
+# Windows needs a MinGW/clang toolchain (MSVC is unsupported by the engine) —
+# see README; build from sdist there until a mingw wheel pipeline is added.
+# --------------------------------------------------------------------------- #
+[tool.cibuildwheel]
+build-frontend = "build"
+test-requires = ["numpy"]
+test-command = "python -c \"import faster_enhancer as fe; e=fe.Enhancer(); import numpy as np; print(e.run(np.zeros(fe.FRAME_SIZE, dtype=np.float32)).shape)\""
+
+[tool.cibuildwheel.linux]
+archs = ["x86_64", "aarch64"]
+manylinux-x86_64-image = "manylinux_2_28"
+manylinux-aarch64-image = "manylinux_2_28"
+
+[tool.cibuildwheel.macos]
+archs = ["x86_64", "arm64"]
+
+[tool.cibuildwheel.windows]
+# Engine requires GCC/Clang target attributes (MSVC unsupported). Skip until a
+# MinGW/clang wheel pipeline is wired up; Windows users build from sdist.
+skip = "*"
