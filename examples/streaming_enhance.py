@@ -61,6 +61,7 @@ class StreamingEnhancer:
         vad: bool = False,
         spectral_gate: bool = False,
         normalize_db: float = -14.0,
+        lowpass_freq: float = 4500.0,
     ):
         # Find ONNX model
         if onnx_path is None:
@@ -100,9 +101,13 @@ class StreamingEnhancer:
         # Spectral gate
         self._sg_enabled = spectral_gate
 
+        # Lowpass filter (BWE buzz removal)
+        self._lowpass_freq = lowpass_freq
+
         print(f"StreamingEnhancer loaded: {onnx_path}")
         print(f"  VAD gate: {'ON' if vad else 'OFF'}")
         print(f"  Spectral gate: {'ON' if spectral_gate else 'OFF'}")
+        print(f"  Lowpass: {lowpass_freq} Hz")
         print(f"  Normalize: {normalize_db} dB")
 
     def _load_vad(self):
@@ -171,6 +176,9 @@ class StreamingEnhancer:
             enhanced[i:i + self.frame_size] = out
 
         # Post-processing
+        if self._lowpass_freq > 0:
+            enhanced = self._apply_lowpass(enhanced)
+
         if self._sg_enabled:
             enhanced = self._apply_spectral_gate(enhanced)
 
@@ -203,6 +211,14 @@ class StreamingEnhancer:
         cleaned = stft * gain
         result = torch.istft(cleaned, n_fft=n_fft, hop_length=hop, window=window)
         return result.numpy()[:len(wav)]
+
+    def _apply_lowpass(self, wav: np.ndarray) -> np.ndarray:
+        """Apply lowpass filter to remove BWE artifacts above cutoff."""
+        from scipy.signal import butter, sosfiltfilt
+        if len(wav) < 32:
+            return wav
+        sos = butter(8, self._lowpass_freq, btype='low', fs=16000, output='sos')
+        return sosfiltfilt(sos, wav).astype(np.float32)
 
     def _apply_vad_gate(self, wav: np.ndarray) -> np.ndarray:
         """VAD-gated silence suppression using Silero VAD."""
